@@ -8,6 +8,9 @@
 *.so
 *.dylib
 
+# Windows resource files
+*.syso
+
 # Test binary, built with `go test -c`
 *.test
 
