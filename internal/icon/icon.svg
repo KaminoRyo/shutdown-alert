@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
+  <!-- Power ring -->
+  <circle cx="32" cy="34" r="16"
+          fill="none"
+          stroke="#444"
+          stroke-width="4"
+          stroke-linecap="round"/>
+
+  <!-- Power line -->
+  <line x1="32" y1="12" x2="32" y2="28"
+        stroke="#444"
+        stroke-width="4"
+        stroke-linecap="round"/>
+
+  <!-- Notification dot -->
+  <circle cx="50" cy="14" r="6" fill="#D83B01"/>
+</svg>
