@@ -1,43 +1,36 @@
 package config
 
-// TargetURL is the URL to be opened.
-const TargetURL = "https://www.google.com" // As specified in the requirements document
-
-// Dialog configuration
 const (
-	// DialogWidth is the minimum width of the confirmation dialog.
+	// TargetURLは開く対象のURLです。
+	TargetURL = "https://www.google.com" // 仕様書で指定
+
+	// 確認ダイアログの最小幅
 	DialogWidth = 400
-	// DialogHeight is the minimum height of the confirmation dialog.
+	// 確認ダイアログの最小高さ
 	DialogHeight = 150
-	// DialogTitle is the title of the confirmation dialog.
+	//確認ダイアログのタイトル
 	DialogTitle = "Shutdown Alert"
-)
 
-// Messages
-const (
-	// ShutdownBlockMessage is the message displayed on the shutdown screen.
+	// ShutdownBlockMessageはシャットダウン画面に表示されるメッセージです。
 	ShutdownBlockMessage = "確認ダイアログに応答してください"
-	// DialogMessageFormat is the format string for the dialog message.
-	// It should contain one %s placeholder for the URL.
+	// DialogMessageFormatはダイアログメッセージの書式文字列です。
+	// URL用のプレースホルダ%sを1つ含む必要があります。
 	DialogMessageFormat = "PCをシャットダウンしようとしています。\n%s を開きますか？"
-)
 
-// Button labels
-const (
-	// OpenButtonLabel is the label for the "Open" button.
+	// OpenButtonLabelは「開く」ボタンのラベルです。
 	OpenButtonLabel = "開く(&O)"
-	// ExitButtonLabel is the label for the "Exit" button.
+	// ExitButtonLabelは終了ボタンのラベルです。
 	ExitButtonLabel = "開かない(&E)"
-)
 
-// Tray icon configuration
-const (
-	// TrayIconTooltip is the tooltip text for the tray icon.
-	TrayIconTooltip = "Shutdown Alert is running."
-	// TrayMenuTest is the label for the test dialog menu item.
-	// The & character indicates the keyboard accelerator (Alt+T).
+	// TrayIconTooltipはトレイアイコンのツールチップテキストです。
+	TrayIconTooltip = "Shutdown Alertが動作しています."
+	// TrayMenuTestはテストダイアログメニュー項目のラベルです。
+	// &文字はキーボードアクセラレータ（Alt+T）を示します。
 	TrayMenuTest = "&Test Dialog"
-	// TrayMenuExit is the label for the exit menu item.
-	// The & character indicates the keyboard accelerator (Alt+E).
+	// TrayMenuExitは終了メニュー項目のラベルです。
+	// &文字はキーボードアクセラレータ（Alt+E）を示します。
 	TrayMenuExit = "&Exit"
+
+	// IconPathはアプリケーションのアイコンファイルパスです。
+	IconPath = "internal/icon/icon.ico"
 )

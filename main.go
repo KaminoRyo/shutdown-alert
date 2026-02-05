@@ -11,6 +11,6 @@ import (
 func main() {
 	a := app.NewApp()
 	if err := a.Run(); err != nil {
-		log.Fatalf("Application failed to run: %v", err)
+		log.Fatalf("アプリケーションの実行に失敗しました: %v", err)
 	}
 }

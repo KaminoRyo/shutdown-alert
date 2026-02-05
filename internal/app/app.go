@@ -4,158 +4,135 @@ package app
 
 import (
 	"fmt"
-	"syscall"
 
 	"github.com/lxn/walk"
 	"github.com/lxn/walk/declarative"
-	"github.com/lxn/win"
 
 	"shutdown-alert/internal/config"
+	"shutdown-alert/internal/ui"
+	"shutdown-alert/internal/win32"
 )
 
-// Win32 message constants
-const (
-	WM_QUERYENDSESSION = 0x0011
-)
-
-// ShellExecute constants
-const (
-	SW_SHOWNORMAL = 1
-)
-
-// appInstance holds the current App instance for WndProc callback.
-// This is necessary because Windows callbacks cannot capture Go closures.
-var appInstance *App
-
-// origWndProc holds the original window procedure.
-var origWndProc uintptr
-
-// App represents the main application.
+// Appはメインアプリケーションを表します。
 type App struct {
-	mw        *walk.MainWindow
-	ni        *walk.NotifyIcon
-	urlToOpen string
+	mainWindow *walk.MainWindow
+	notifyIcon *walk.NotifyIcon
+	urlToOpen  string
 }
 
-// NewApp creates a new application instance.
+// NewAppは新しいアプリケーションインスタンスを作成します。
 func NewApp() *App {
 	return &App{
-		urlToOpen: config.GetTargetURL(),
+		urlToOpen: config.TargetURL,
+		// mainWindowとnotifyIconはRun内で初期化されます。
 	}
 }
 
-// Run initializes and runs the application.
-func (a *App) Run() error {
-	// Store the app instance for WndProc callback
-	appInstance = a
+// Runはアプリケーションを初期化して実行します。
+// この関数は副作用（UIの作成、メッセージループの実行）を持ちます。
+func (app *App) Run() error {
+	// WndProcコールバックのためにappインスタンスを保存します。
+	appInstance = app
 
-	err := a.createMainWindow()
+	err := app.createMainWindow()
 	if err != nil {
-		return fmt.Errorf("failed to create main window: %w", err)
+		return fmt.Errorf("メインウィンドウの作成に失敗しました: %w", err)
 	}
 
-	err = a.initNotifyIcon()
+	err = app.initNotifyIcon()
 	if err != nil {
-		return fmt.Errorf("failed to initialize notify icon: %w", err)
+		return fmt.Errorf("通知アイコンの初期化に失敗しました: %w", err)
 	}
 
-	a.installWndProcHook()
+	app.installWndProcHook()
 
-	// Start the message loop (blocking call)
-	a.mw.Run()
+	// Windowsのイベント待ちループに入ります。
+	// この後の処理はイベントドリブンで行われます。
+	app.mainWindow.Run()
 
-	// Cleanup after the app exits
-	if a.ni != nil {
-		_ = a.ni.Dispose()
+	// アプリが終了（=Runが終わる）したら以下をクリーンアップします。
+	// finallyブロックのようなものと考えます。
+	if app.notifyIcon != nil {
+		_ = app.notifyIcon.Dispose()
 	}
 
-	// Clear the global instance
+	// グローバルインスタンスをクリアします。
 	appInstance = nil
 
 	return nil
 }
 
-// createMainWindow creates a hidden main window.
-func (a *App) createMainWindow() error {
+// Windowsのアプリは必ずメインウィンドウを持つ必要があるので、非表示のメインウィンドウを作成します。
+func (app *App) createMainWindow() error {
 	return declarative.MainWindow{
-		AssignTo: &a.mw,
-		Title:    "Shutdown Alert",
+		AssignTo: &app.mainWindow,
+		Title:    config.DialogTitle,
 		Visible:  false,
 		Layout:   declarative.VBox{},
 	}.Create()
 }
 
-// wndProcCallback is the custom window procedure to intercept WM_QUERYENDSESSION.
-func wndProcCallback(hwnd win.HWND, msg uint32, wParam, lParam uintptr) uintptr {
-	if msg == WM_QUERYENDSESSION {
-		if appInstance != nil {
-			appInstance.showConfirmationDialog()
-		}
-		// Return TRUE to allow the session to end
-		return 1
-	}
-
-	// Call the original window procedure
-	return win.CallWindowProc(origWndProc, hwnd, msg, wParam, lParam)
+// initNotifyIconは通知アイコンを作成して設定します。
+// この関数は副作用（UIの作成）を持ちます。
+func (app *App) initNotifyIcon() error {
+	var err error
+	app.notifyIcon, err = ui.InitNotifyIcon(
+		app.mainWindow,
+		app.showConfirmationDialog, // テスト用にshowConfirmationDialogを渡す
+		func() { walk.App().Exit(0) },
+	)
+	return err
 }
 
-// installWndProcHook installs the custom window procedure.
-func (a *App) installWndProcHook() {
-	hwnd := a.mw.Handle()
-	origWndProc = win.SetWindowLongPtr(hwnd, win.GWLP_WNDPROC, syscall.NewCallback(wndProcCallback))
-}
+// handleShutdownQueryはシャットダウンが検出されたときに確認ダイアログを表示します。
+// この関数は副作用（UIの表示、アプリケーションの終了の可能性）を持ちます。
+func (app *App) handleShutdownQuery() {
+	err := ui.ShowConfirmationDialog(
+		app.mainWindow,
+		app.urlToOpen,
+		func() {
+			app.openURL()
+			walk.App().Exit(0)
+		},
+		func() {
+			walk.App().Exit(0)
+		},
+	)
 
-// initNotifyIcon imperatively creates and configures the notification icon.
-func (a *App) initNotifyIcon() error {
-	icon, err := walk.NewIconFromFile("internal/icon/icon.ico")
 	if err != nil {
-		return fmt.Errorf("failed to load icon: %w", err)
-	}
-
-	a.ni, err = walk.NewNotifyIcon(a.mw)
-	if err != nil {
-		return fmt.Errorf("failed to create notify icon: %w", err)
-	}
-
-	if err := a.ni.SetIcon(icon); err != nil {
-		return fmt.Errorf("failed to set icon: %w", err)
-	}
-	if err := a.ni.SetToolTip("Shutdown Alert is running."); err != nil {
-		return fmt.Errorf("failed to set tooltip: %w", err)
-	}
-
-	// Create the exit action
-	exitAction := walk.NewAction()
-	if err := exitAction.SetText("E&xit"); err != nil {
-		return fmt.Errorf("failed to set exit text: %w", err)
-	}
-	exitAction.Triggered().Attach(func() {
+		// ダイアログの表示に失敗した場合は、単純に終了します。
 		walk.App().Exit(0)
-	})
-
-	// Add exit action to the context menu
-	if err := a.ni.ContextMenu().Actions().Add(exitAction); err != nil {
-		return fmt.Errorf("failed to add exit action: %w", err)
 	}
 
-	return a.ni.SetVisible(true)
-}
-
-// showConfirmationDialog displays the shutdown confirmation message.
-func (a *App) showConfirmationDialog() {
-	msg := fmt.Sprintf("You are about to sign out.\nDo you want to open %s first?", a.urlToOpen)
-
-	result := walk.MsgBox(a.mw, "Shutdown Confirmation", msg, walk.MsgBoxYesNo|walk.MsgBoxIconQuestion)
-
-	if result == walk.DlgCmdYes {
-		a.openURL()
+	// ダイアログをフォアグラウンドに表示します。
+	if app.mainWindow != nil {
+		win32.SetForegroundWindow(app.mainWindow.Handle())
 	}
 }
 
-// openURL opens the target URL using ShellExecute.
-func (a *App) openURL() {
-	verb, _ := syscall.UTF16PtrFromString("open")
-	file, _ := syscall.UTF16PtrFromString(a.urlToOpen)
+// showConfirmationDialogはシャットダウン確認メッセージを表示します（テスト用）。
+// この関数は副作用（UIの表示、アプリケーションの終了の可能性）を持ちます。
+func (app *App) showConfirmationDialog() {
+	_ = ui.ShowConfirmationDialog(
+		app.mainWindow,
+		app.urlToOpen,
+		func() {
+			app.openURL()
+			walk.App().Exit(0)
+		},
+		func() {
+			walk.App().Exit(0)
+		},
+	)
 
-	win.ShellExecute(a.mw.Handle(), verb, file, nil, nil, SW_SHOWNORMAL)
+	// ダイアログをフォアグラウンドに表示します。
+	if app.mainWindow != nil {
+		win32.SetForegroundWindow(app.mainWindow.Handle())
+	}
+}
+
+// openURLはShellExecuteを使用して対象のURLを開きます。
+// この関数は副作用（外部アプリケーションの起動）を持ちます。
+func (app *App) openURL() {
+	win32.ShellExecute(app.mainWindow.Handle(), app.urlToOpen)
 }
