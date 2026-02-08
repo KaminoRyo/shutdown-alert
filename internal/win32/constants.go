@@ -14,3 +14,8 @@ const (
 const (
 	SW_SHOWNORMAL = 1 // ウィンドウを通常表示
 )
+
+// Mutex定数
+const (
+	ERROR_ALREADY_EXISTS = 183 // 既に存在するエラーコード
+)
