@@ -3,6 +3,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"syscall"
 
@@ -14,6 +15,17 @@ import (
 )
 
 func main() {
+	// 設定ファイルを読み込み
+	userConfig, err := config.LoadUserConfig("config.yaml")
+	if err != nil {
+		// パース失敗時はエラーメッセージを表示
+		log.Printf("設定ファイルの読み込みに失敗しました（デフォルト値を使用）: %v", err)
+		errorMessage := fmt.Sprintf("設定ファイルの読み込みに失敗しました。\nデフォルト値を使用します。\n\nエラー: %v", err)
+		message, _ := syscall.UTF16PtrFromString(errorMessage)
+		title, _ := syscall.UTF16PtrFromString("設定エラー")
+		win.MessageBox(0, message, title, win.MB_OK|win.MB_ICONWARNING)
+	}
+
 	// 2重起動防止: Win32 Mutex APIを使用してアプリケーションミューテックスを取得
 	// 名前付きミューテックス（Global\ShutdownAlert-{GUID}）により、
 	// プロセス間で排他制御を行い、既に起動している場合はエラーを返す
@@ -34,7 +46,7 @@ func main() {
 	}()
 
 	// アプリケーションを実行
-	a := app.NewApp()
+	a := app.NewApp(userConfig)
 	if err := a.Run(); err != nil {
 		log.Fatalf("アプリケーションの実行に失敗しました: %v", err)
 	}

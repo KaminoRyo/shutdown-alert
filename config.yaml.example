@@ -1,0 +1,16 @@
+# Shutdown Alert 設定ファイル
+
+# シャットダウン時に開くURL
+# 空文字列 ("") を指定するとアラートモード（URLを開かない）になります
+target_url: "https://www.google.com"
+
+# ダイアログのサイズ（ピクセル）
+dialog_width: 640
+dialog_height: 480
+
+# ダイアログメッセージ
+# 複数行で記述できます
+# URLを開く場合は、メッセージ内にURLを直接書いてください
+dialog_message: |
+  PCをシャットダウンしようとしています。
+  https://www.google.com を開きますか？

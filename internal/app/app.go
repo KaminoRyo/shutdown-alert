@@ -19,13 +19,13 @@ type App struct {
 	mainWindow    *walk.MainWindow
 	notifyIcon    *walk.NotifyIcon
 	startupAction *walk.Action
-	urlToOpen     string
+	userConfig    config.UserConfig
 }
 
 // NewAppは新しいアプリケーションインスタンスを作成します。
-func NewApp() *App {
+func NewApp(userConfig config.UserConfig) *App {
 	return &App{
-		urlToOpen: config.TargetURL,
+		userConfig: userConfig,
 		// mainWindowとnotifyIconはRun内で初期化されます。
 	}
 }
@@ -96,7 +96,10 @@ func (app *App) initNotifyIcon() error {
 func (app *App) handleShutdownQuery() {
 	err := ui.ShowConfirmationDialog(
 		app.mainWindow,
-		app.urlToOpen,
+		app.userConfig.TargetURL,
+		app.userConfig.DialogWidth,
+		app.userConfig.DialogHeight,
+		app.userConfig.DialogMessage,
 		func() {
 			app.openURL()
 			walk.App().Exit(0)
@@ -122,7 +125,10 @@ func (app *App) handleShutdownQuery() {
 func (app *App) showConfirmationDialog() {
 	_ = ui.ShowConfirmationDialog(
 		app.mainWindow,
-		app.urlToOpen,
+		app.userConfig.TargetURL,
+		app.userConfig.DialogWidth,
+		app.userConfig.DialogHeight,
+		app.userConfig.DialogMessage,
 		func() {
 			app.openURL()
 			walk.App().Exit(0)
@@ -182,5 +188,5 @@ func (app *App) toggleStartup() {
 // openURLはShellExecuteを使用して対象のURLを開きます。
 // この関数は副作用（外部アプリケーションの起動）を持ちます。
 func (app *App) openURL() {
-	win32.ShellExecute(app.mainWindow.Handle(), app.urlToOpen)
+	win32.ShellExecute(app.mainWindow.Handle(), app.userConfig.TargetURL)
 }
