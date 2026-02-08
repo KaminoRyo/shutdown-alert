@@ -18,10 +18,48 @@ func ShowConfirmationDialog(owner walk.Form, urlToOpen string, onOpen, onExit fu
 	var dlg *walk.Dialog
 	var openBtn, exitBtn *walk.PushButton
 
+	// URLの有無によってボタンの構成を決定します。
+	var buttons []declarative.Widget
+	buttons = append(buttons, declarative.HSpacer{})
+
+	if urlToOpen != "" {
+		// URLがある場合：「開く」と「閉じる」両方のボタンを表示
+		buttons = append(buttons, declarative.PushButton{
+			AssignTo: &openBtn,
+			Text:     config.OpenButtonLabel,
+			OnClicked: func() {
+				if onOpen != nil {
+					onOpen()
+				}
+				dlg.Accept()
+			},
+		})
+	}
+
+	// 「閉じる」ボタンは常に表示
+	buttons = append(buttons, declarative.PushButton{
+		AssignTo: &exitBtn,
+		Text:     config.ExitButtonLabel,
+		OnClicked: func() {
+			if onExit != nil {
+				onExit()
+			}
+			dlg.Accept()
+		},
+	})
+
+	// デフォルトボタンとキャンセルボタンの設定
+	var defaultButton **walk.PushButton
+	if urlToOpen != "" {
+		defaultButton = &openBtn
+	} else {
+		defaultButton = &exitBtn
+	}
+
 	_, err := declarative.Dialog{
 		AssignTo:      &dlg,
 		Title:         config.DialogTitle,
-		DefaultButton: &openBtn,
+		DefaultButton: defaultButton,
 		CancelButton:  &exitBtn,
 		MinSize:       declarative.Size{Width: config.DialogWidth, Height: config.DialogHeight},
 		Layout:        declarative.VBox{},
@@ -30,30 +68,8 @@ func ShowConfirmationDialog(owner walk.Form, urlToOpen string, onOpen, onExit fu
 				Text: fmt.Sprintf(config.DialogMessageFormat, urlToOpen),
 			},
 			declarative.Composite{
-				Layout: declarative.HBox{},
-				Children: []declarative.Widget{
-					declarative.HSpacer{},
-					declarative.PushButton{
-						AssignTo: &openBtn,
-						Text:     config.OpenButtonLabel,
-						OnClicked: func() {
-							if onOpen != nil {
-								onOpen()
-							}
-							dlg.Accept()
-						},
-					},
-					declarative.PushButton{
-						AssignTo: &exitBtn,
-						Text:     config.ExitButtonLabel,
-						OnClicked: func() {
-							if onExit != nil {
-								onExit()
-							}
-							dlg.Accept()
-						},
-					},
-				},
+				Layout:   declarative.HBox{},
+				Children: buttons,
 			},
 		},
 	}.Run(owner)

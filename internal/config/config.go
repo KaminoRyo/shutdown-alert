@@ -2,7 +2,7 @@ package config
 
 const (
 	// TargetURLは開く対象のURLです。
-	TargetURL = "https://www.google.com" // 仕様書で指定
+	TargetURL = "" // 仕様書で指定
 
 	// 確認ダイアログの最小幅
 	DialogWidth = 400
@@ -20,7 +20,7 @@ const (
 	// OpenButtonLabelは「開く」ボタンのラベルです。
 	OpenButtonLabel = "開く(&O)"
 	// ExitButtonLabelは終了ボタンのラベルです。
-	ExitButtonLabel = "開かない(&E)"
+	ExitButtonLabel = "閉じる(&E)"
 
 	// TrayIconTooltipはトレイアイコンのツールチップテキストです。
 	TrayIconTooltip = "Shutdown Alertが動作しています."
