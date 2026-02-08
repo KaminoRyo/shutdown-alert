@@ -8,4 +8,7 @@ require (
 	golang.org/x/sys v0.40.0
 )
 
-require gopkg.in/Knetic/govaluate.v3 v3.0.0 // indirect
+require (
+	gopkg.in/Knetic/govaluate.v3 v3.0.0 // indirect
+	gopkg.in/yaml.v3 v3.0.1 // indirect
+)
