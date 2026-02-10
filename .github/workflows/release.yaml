@@ -1,0 +1,38 @@
+name: Release Windows EXE
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.25.6"
+
+      - name: Setup rsrc
+        run: |
+          go install github.com/akavel/rsrc@latest
+
+      - name: Build .syso file
+        run: |
+          rsrc -manifest shutdown-alert.manifest -ico internal/icon/icon.ico -o rsrc.syso
+
+      - name: Build
+        run: |
+          go build -ldflags "-H windowsgui" -o shutdown-alert.exe .
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: shutdown-alert.exe
