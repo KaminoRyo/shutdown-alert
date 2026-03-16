@@ -36,3 +36,6 @@ config.yaml
 # Editor/IDE
 # .idea/
 # .vscode/
+
+# coding agents
+.claude/settings.local.json
